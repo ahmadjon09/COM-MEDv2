@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   Tokenlar
+   ========================================================= */
+:root {
+  --font-sans: 'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --hair: #e3e7ee;
+  --paper: #f5f7f9;
+  --accent: #1e90ff;
+  --header-h: 60px;
+}
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 16px);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white text-ink-700 antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv05', 'tnum' 0;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-ink-900 font-semibold;
+    text-wrap: balance;
+  }
+
+  /* Raqamlar jadvalda tekis tursin */
+  table, .tnum { font-variant-numeric: tabular-nums; }
+
+  ::selection { background: #cfe6ff; color: #082647; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: var(--paper); }
+  ::-webkit-scrollbar-thumb { background: #cbd2dd; border: 3px solid var(--paper); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #aab4c4; }
+}
+
+/* =========================================================
+   Tuzilma
+   ========================================================= */
+@layer components {
+  .wrap {
+    @apply mx-auto w-full max-w-container px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-14;
+  }
+
+  /* Chegara chizig'i bilan ajratilgan bo'lim */
+  .band { @apply border-t border-ink-150; }
+  .band-pad { @apply py-14 md:py-18 lg:py-22; }
+
+  /* Mono mikro-yorliq: 01 / KATALOG / SKU */
+  .kicker {
+    @apply font-mono text-label uppercase text-ink-400;
+  }
+
+  /* Bo'lim sarlavhasi qatori: raqam + nom + chiziq */
+  .rule-head {
+    @apply flex items-baseline gap-3 border-b border-ink-150 pb-3;
+  }
+
+  /* Ma'lumot jadvali (spec sheet) */
+  .spec-row {
+    @apply flex items-baseline justify-between gap-4 border-b border-dashed border-ink-150 py-2.5;
+  }
+  .spec-key { @apply font-mono text-micro uppercase tracking-wide text-ink-400; }
+  .spec-val { @apply text-sm font-medium text-ink-900 text-right; }
+
+  /* Karta: soyasiz, faqat chegara. Hover — akcent chegara + fon */
+  .tile {
+    @apply relative border border-ink-150 bg-white transition-[border-color,background-color,transform] duration-200 ease-out;
+  }
+  .tile-i:hover {
+    @apply border-ink-400 bg-ink-25;
+  }
+
+  /* Havola: chiziq chapdan o'ngga cho'ziladi */
+  .ul-link {
+    @apply relative inline-block text-ink-700 transition-colors duration-200 hover:text-blue-600;
+  }
+  .ul-link::after {
+    content: '';
+    @apply absolute -bottom-px left-0 h-px w-0 bg-blue-500 transition-[width] duration-300 ease-out;
+  }
+  .ul-link:hover::after { @apply w-full; }
+
+  /* Holat belgisi */
+  .dot { @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full; }
+
+  /* Blueprint fon — ingichka to'r (rasm emas, CSS) */
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(30, 144, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 144, 255, 0.055) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+  .grid-fade {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  }
+
+  /* Skeleton */
+  .sk { @apply relative overflow-hidden bg-ink-100; }
+  .sk::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    animation: sweep 1.4s linear infinite;
+  }
+
+  /* Mahsulot rasmi joyi — "texnik chizma" fon */
+  .imgplate {
+    background-color: #fbfcfd;
+    background-image:
+      linear-gradient(to right, rgba(20, 25, 32, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20, 25, 32, 0.045) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+}
+
+/* =========================================================
+   Telefon input — dizaynga moslash
+   ========================================================= */
+.PhoneInput {
+  @apply flex items-center gap-2.5 border border-ink-200 bg-white px-3 py-2.5 transition-colors duration-200;
+  border-radius: 4px;
+}
+.PhoneInput:focus-within { @apply border-blue-500 shadow-focus; }
+.PhoneInputInput {
+  @apply w-full border-0 bg-transparent p-0 text-sm text-ink-900 outline-none placeholder:text-ink-400;
+  font-variant-numeric: tabular-nums;
+}
+.PhoneInputCountry { @apply flex items-center gap-1.5; }
+.PhoneInputCountryIcon { @apply h-4 w-[22px] overflow-hidden; border-radius: 2px; }
+.PhoneInputCountrySelectArrow { @apply text-ink-400; }
+
+/* =========================================================
+   Harakatni kamaytirish
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

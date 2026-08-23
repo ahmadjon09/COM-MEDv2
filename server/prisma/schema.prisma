@@ -1,0 +1,275 @@
+// Prisma schema — barcha kontent modellari 3 tilli (uz, ru, uz-Cyrl) maydonlarga ega
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Admin foydalanuvchi — faqat admin panelga kiradi (ommaviy ro'yxatdan o'tish yo'q)
+model Admin {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  passwordHash String
+  fullName     String
+  role         String   @default("ADMIN") // ADMIN | SUPERADMIN
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@map("admins")
+}
+
+/// Kategoriya — masalan "UZI apparatlari", "EKG", "Sterilizatorlar"
+model Category {
+  id     String @id @default(cuid())
+  slug   String @unique
+
+  nameUz     String
+  nameRu     String
+  nameUzCyrl String
+
+  descUz     String? @db.Text
+  descRu     String? @db.Text
+  descUzCyrl String? @db.Text
+
+  // SEO maydonlari (3 til)
+  metaTitleUz     String?
+  metaTitleRu     String?
+  metaTitleUzCyrl String?
+  metaDescUz      String? @db.Text
+  metaDescRu      String? @db.Text
+  metaDescUzCyrl  String? @db.Text
+
+  /// Kategoriya qaysi bo'limga tegishli: PART | SERVICE | BOTH
+  scope     String  @default("BOTH")
+  iconKey   String? // frontend'dagi ikonka kaliti (uzi, ekg, ivl, defib, sterilizator, lab)
+  imageUrl  String? // imgbb URL
+  ogImage   String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+/// Mahsulot turi: zapchast yoki xizmat
+/// Zapchast guruhi — eski saytdagi "Sensorlar / Ekranlar / Quvvat bloklari" bo'linishi
+enum PartType {
+  SENSOR       // datchik, sensor
+  SCREEN       // ekran, monitor, displey
+  POWER        // quvvat bloki, akkumulyator, plata
+  CABLE        // kabel, razyom, elektrod
+  MECHANICAL   // mexanik qism: turbina, klapan, zichlagich, rotor
+  CONSUMABLE   // sarf materiali: qog'oz, kontur, filtr
+  OTHER
+}
+
+enum PartCondition {
+  NEW // yangi, original
+  REFURBISHED // tiklangan / qayta ishlangan
+}
+
+enum ProductKind {
+  PART // zapchast
+  SERVICE // xizmat (ta'mirlash, kalibrovka, diagnostika)
+}
+
+model Product {
+  id   String @id @default(cuid())
+  slug String @unique
+  kind ProductKind @default(PART)
+
+  nameUz     String
+  nameRu     String
+  nameUzCyrl String
+
+  shortUz     String? @db.Text // qisqa tavsif (karta uchun)
+  shortRu     String? @db.Text
+  shortUzCyrl String? @db.Text
+
+  descUz     String? @db.Text
+  descRu     String? @db.Text
+  descUzCyrl String? @db.Text
+
+  // Narx: null bo'lsa "kelishilgan holda" ko'rsatiladi
+  price     Decimal? @db.Decimal(12, 2)
+  currency  String   @default("UZS")
+  priceNote String? // "dan boshlab", "1 soatlik ish" kabi izoh
+
+  // --- Zapchast (PART) uchun ---
+  brand         String? // brend: Mindray, GE, Philips...
+  model         String? // moslik modeli
+  sku           String? // artikul
+  inStock       Boolean @default(true)
+  warranty      String? // kafolat muddati
+  originCountry String? // ishlab chiqarilgan davlat kodi: CN, DE, JP, KR, US, TR, RU, UZ, IN
+  manufacturer  String? // ishlab chiqaruvchi zavod/kompaniya
+  condition     PartCondition @default(NEW) // yangi yoki tiklangan
+  partType      PartType      @default(OTHER) // zapchast guruhi (filtr uchun)
+  packQty       Int?    // to'plamdagi soni
+  compatibility String[] @default([]) // mos keladigan apparatlar ro'yxati
+
+  /// Texnik xarakteristikalar: [{ labelUz, labelRu, labelUzCyrl, value }]
+  specs Json @default("[]")
+
+  // --- Xizmat (SERVICE) uchun ---
+  /// Xizmatga nimalar kiradi (har bir til uchun alohida ro'yxat)
+  includesUz     String[] @default([])
+  includesRu     String[] @default([])
+  includesUzCyrl String[] @default([])
+  /// Bajarilish muddati matni
+  leadTimeUz     String?
+  leadTimeRu     String?
+  leadTimeUzCyrl String?
+
+  images   String[] @default([]) // imgbb URL'lar ro'yxati
+  ogImage  String?
+
+  metaTitleUz     String?
+  metaTitleRu     String?
+  metaTitleUzCyrl String?
+  metaDescUz      String? @db.Text
+  metaDescRu      String? @db.Text
+  metaDescUzCyrl  String? @db.Text
+
+  keywords  String[] @default([]) // qidiruv uchun qo'shimcha kalit so'zlar
+  isActive  Boolean  @default(true)
+  isFeatured Boolean @default(false)
+  sortOrder Int      @default(0)
+  views     Int      @default(0)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  requests Request[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId, isActive])
+  @@index([isFeatured, isActive])
+  @@index([kind, isActive])
+  @@index([brand])
+  @@index([partType, isActive])
+  @@map("products")
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  DONE
+  SPAM
+}
+
+/// Mijoz arizasi (so'rov). Telegramga yuboriladi + DB'ga zaxira sifatida yoziladi
+model Request {
+  id        String        @id @default(cuid())
+  name      String
+  phone     String
+  message   String?       @db.Text
+  locale    String        @default("uz")
+  status    RequestStatus @default(NEW)
+
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String? // snapshot — mahsulot o'chirilsa ham nomi qoladi
+
+  source        String  @default("site") // site | telegram-fallback
+  telegramSent  Boolean @default(false)
+  telegramError String? @db.Text
+
+  ip        String?
+  userAgent String? @db.Text
+  adminNote String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("requests")
+}
+
+/// Sayt sozlamalari — bitta yozuv (singleton, id = "main")
+model SiteSetting {
+  id String @id @default("main")
+
+  siteNameUz     String @default("MedService")
+  siteNameRu     String @default("MedService")
+  siteNameUzCyrl String @default("MedService")
+
+  taglineUz     String? @db.Text
+  taglineRu     String? @db.Text
+  taglineUzCyrl String? @db.Text
+
+  aboutUz     String? @db.Text
+  aboutRu     String? @db.Text
+  aboutUzCyrl String? @db.Text
+
+  addressUz     String? @db.Text
+  addressRu     String? @db.Text
+  addressUzCyrl String? @db.Text
+
+  workHoursUz     String?
+  workHoursRu     String?
+  workHoursUzCyrl String?
+
+  phones  Json @default("[]") // [{ label, value, isPrimary }]
+  socials Json @default("[]") // [{ type, url }]
+  emails  String[] @default([])
+
+  telegramUrl  String?
+  instagramUrl String?
+  youtubeUrl   String?
+  mapEmbedUrl  String?
+
+  metaTitleUz     String?
+  metaTitleRu     String?
+  metaTitleUzCyrl String?
+  metaDescUz      String? @db.Text
+  metaDescRu      String? @db.Text
+  metaDescUzCyrl  String? @db.Text
+  defaultOgImage  String?
+
+  // Statik huquqiy sahifalar (3 til, markdown)
+  termsUz      String? @db.Text
+  termsRu      String? @db.Text
+  termsUzCyrl  String? @db.Text
+  privacyUz    String? @db.Text
+  privacyRu    String? @db.Text
+  privacyUzCyrl String? @db.Text
+
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+/// Audit log — kim, qachon, nima o'zgartirdi
+model AuditLog {
+  id       String  @id @default(cuid())
+  adminId  String?
+  admin    Admin?  @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminLogin String?
+
+  action   String // CREATE | UPDATE | DELETE | LOGIN | LOGOUT
+  entity   String // Product | Category | SiteSetting | Request | Admin
+  entityId String?
+  before   Json?
+  after    Json?
+  ip       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([entity, createdAt])
+  @@map("audit_logs")
+}
