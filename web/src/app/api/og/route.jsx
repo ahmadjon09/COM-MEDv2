@@ -41,9 +41,6 @@ export async function GET(request) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, background: '#1E90FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img width={40} height={40} src="/logo.png" alt="logo" />
-            </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 22, fontWeight: 700, color: '#141920', letterSpacing: -0.3 }}>COM MEDICAL SERVIS</span>
               <span style={{ fontSize: 11, color: '#8892a3', letterSpacing: 2.5, marginTop: 2 }}>TIBBIY APARATLAR XIZMATI</span>
