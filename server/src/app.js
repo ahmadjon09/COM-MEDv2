@@ -48,21 +48,58 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // CORS — faqat ruxsat etilgan frontend manzillari
   app.use(
     cors({
-      origin(origin, cb) {
-        // origin bo'lmasa (server-to-server, curl, Next.js RSC fetch) — ruxsat
-        if (!origin) return cb(null, true);
-        if (corsOrigins.includes(origin)) return cb(null, true);
-        // Vercel preview deploylariga ruxsat (*.vercel.app)
-        if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return cb(null, true);
-        return cb(new Error(`CORS: ${origin} manziliga ruxsat yoʻq`));
+      origin(origin, callback) {
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (corsOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        if (
+          /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(
+            origin
+          )
+        ) {
+          return callback(null, true);
+        }
+
+        return callback(
+          new Error(
+            `CORS: ${origin} manziliga ruxsat yo‘q`
+          )
+        );
       },
+
       credentials: true,
-      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+
+      methods: [
+        'GET',
+        'POST',
+        'PATCH',
+        'PUT',
+        'DELETE',
+        'OPTIONS',
+      ],
+
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+      ],
+
+      exposedHeaders: [
+        'Content-Length',
+        'Content-Range',
+      ],
+
       maxAge: 86400,
+
+      optionsSuccessStatus: 204,
     })
   );
 
@@ -77,7 +114,20 @@ export function createApp() {
   app.get('/health', (_req, res) =>
     res.json({ ok: true, data: { status: 'up', env: env.NODE_ENV, time: new Date().toISOString() } })
   );
+  const keepServerAlive = () => {
+    if (!process.env.API_PUBLIC_URL) return;
 
+    setInterval(async () => {
+      try {
+        await fetch(`${process.env.API_PUBLIC_URL}/health`);
+        console.log('🔄 Alive');
+      } catch (e) {
+        console.log('Ping failed');
+      }
+    }, 10 * 60 * 1000);
+  };
+
+  keepServerAlive()
   // Ommaviy o'qish uchun yumshoqroq limit
   app.use('/api/products', publicLimiter, productsRouter);
   app.use('/api/categories', publicLimiter, categoriesRouter);

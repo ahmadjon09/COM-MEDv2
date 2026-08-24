@@ -42,9 +42,7 @@ export async function GET(request) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 40, height: 40, background: '#1E90FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M2 12h4l2-6 3 12 2.5-8 1.5 4h7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <img width={40} height={40} src="/logo.png" alt="logo" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 22, fontWeight: 700, color: '#141920', letterSpacing: -0.3 }}>COM MEDICAL SERVIS</span>
