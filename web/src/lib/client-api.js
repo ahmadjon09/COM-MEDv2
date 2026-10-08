@@ -7,7 +7,7 @@
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import useSWR from 'swr';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 const CACHE_PREFIX = 'ms-cache:';
 const CACHE_VERSION = 'v1';

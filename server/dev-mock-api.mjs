@@ -38,7 +38,7 @@ const products = [...services, ...parts].map((p, i) => {
     views: 0,
     createdAt: now,
     updatedAt: now,
-    category: { id: c.id, slug: c.slug, nameUz: c.nameUz, nameRu: c.nameRu, nameUzCyrl: c.nameUzCyrl, iconKey: c.iconKey },
+    category: { id: c.id, slug: c.slug, nameUz: c.nameUz, nameRu: c.nameRu, nameUzCyrl: c.nameUzCyrl, iconKey: c.iconKey, imageUrl: c.imageUrl },
   };
 });
 
@@ -270,7 +270,7 @@ http.createServer((req, res) => {
   if (p === '/api/products/meta/slugs') {
     return send(res, 200, { ok: true, data: {
       products: products.map((x) => ({ slug: x.slug, kind: x.kind, updatedAt: x.updatedAt })),
-      categories: categories.map((x) => ({ slug: x.slug, updatedAt: x.updatedAt })),
+      categories: categories.map((x) => ({ slug: x.slug, scope: x.scope, updatedAt: x.updatedAt })),
     } });
   }
 

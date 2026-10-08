@@ -21,7 +21,7 @@ export async function generateStaticParams() {
   const { products } = await getAllSlugs();
   return products
     .filter((p) => p.kind === 'SERVICE')
-    .slice(0, 60)
+    .slice(0, 500)
     .flatMap((p) => ['uz', 'ru', 'uz-cyrl'].map((locale) => ({ locale, slug: p.slug })));
 }
 
@@ -33,14 +33,26 @@ export async function generateMetadata({ params }) {
 
   const dict = getDict(locale);
   const name = pick(item, 'name', locale);
+  const catName = item.category ? pick(item.category, 'name', locale) : '';
 
   return buildMetadata({
-    locale, path: `/services/${slug}`, type: 'article',
+    locale,
+    path: `/services/${slug}`,
+    type: 'article',
     title: pick(item, 'metaTitle', locale) || `${name} — ${dict.services.title}`,
-    description: pick(item, 'metaDesc', locale) || truncate(pick(item, 'short', locale) || pick(item, 'desc', locale), 300),
+    description:
+      pick(item, 'metaDesc', locale) ||
+      truncate(pick(item, 'short', locale) || pick(item, 'desc', locale), 165),
     image: item.ogImage || item.images?.[0],
     ogParams: { title: name, subtitle: truncate(pick(item, 'short', locale), 110), badge: 'SERVICE' },
-    keywords: [name, pick(item.category, 'name', locale), ...(item.keywords || [])].filter(Boolean),
+    keywords: [
+      name,
+      catName,
+      dict.services.title,
+      ...(item.keywords || []),
+      'COM MEDICAL SERVIS',
+      'Namangan',
+    ].filter(Boolean),
   });
 }
 
@@ -59,27 +71,40 @@ export default async function ServicePage({ params }) {
   const catName = pick(item.category, 'name', locale);
   const url = abs(`/${locale}/services/${slug}`);
 
-  // Shu kategoriyadagi zapchastlar
-  const related = await getProducts({ kind: 'PART', category: item.category.slug, limit: 4 });
+  // Shu kategoriyadagi zapchastlar va boshqa xizmatlar parallel yuklanadi
+  const [catParts, featuredParts, allServices] = await Promise.all([
+    item.category.slug !== 'umumiy-servis'
+      ? getProducts({ kind: 'PART', category: item.category.slug, limit: 4 })
+      : Promise.resolve({ items: [] }),
+    getProducts({ kind: 'PART', featured: 'true', limit: 4 }),
+    getProducts({ kind: 'SERVICE', limit: 12 }),
+  ]);
+
+  const relatedParts = catParts.items.length > 0 ? catParts.items : featuredParts.items;
+  const otherServices = allServices.items.filter((s) => s.slug !== item.slug).slice(0, 4);
 
   return (
     <>
-      <JsonLd data={[
-        breadcrumbLd([
-          { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
-          { name: dict.services.title, url: abs(`/${locale}/services`) },
-          { name, url },
-        ]),
-        productLd(item, locale, url),
-      ]} />
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
+            { name: dict.services.title, url: abs(`/${locale}/services`) },
+            { name, url },
+          ]),
+          productLd(item, locale, url, dict),
+        ]}
+      />
 
       <div className="border-b border-ink-150">
         <div className="wrap py-5">
-          <Breadcrumbs items={[
-            { name: dict.product.breadcrumbHome, href: `/${locale}` },
-            { name: dict.services.title, href: `/${locale}/services` },
-            { name },
-          ]} />
+          <Breadcrumbs
+            items={[
+              { name: dict.product.breadcrumbHome, href: `/${locale}` },
+              { name: dict.services.title, href: `/${locale}/services` },
+              { name },
+            ]}
+          />
         </div>
       </div>
 
@@ -88,7 +113,17 @@ export default async function ServicePage({ params }) {
           <div>
             <Reveal>
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="border border-ink-150 px-2.5 py-1 text-xs text-ink-600">{catName}</span>
+                {item.category.slug !== 'umumiy-servis' ? (
+                  <Link
+                    href={`/${locale}/parts?category=${item.category.slug}`}
+                    prefetch={false}
+                    className="border border-ink-150 px-2.5 py-1 text-xs text-ink-600 transition-colors hover:border-blue-500 hover:text-blue-600"
+                  >
+                    {catName}
+                  </Link>
+                ) : (
+                  <span className="border border-ink-150 px-2.5 py-1 text-xs text-ink-600">{catName}</span>
+                )}
               </div>
 
               <h1 className="mt-5 text-2xl font-semibold leading-tight tracking-tight text-ink-900 md:text-3xl xl:text-4xl">
@@ -99,7 +134,9 @@ export default async function ServicePage({ params }) {
 
             {item.images?.length > 0 && (
               <Reveal delay={0.05}>
-                <div className="mt-8"><Gallery images={item.images} alt={name} kind="SERVICE" /></div>
+                <div className="mt-8">
+                  <Gallery images={item.images} alt={name} kind="SERVICE" />
+                </div>
               </Reveal>
             )}
 
@@ -128,7 +165,9 @@ export default async function ServicePage({ params }) {
                   <h2 className="border-b border-ink-150 pb-2 text-lg font-semibold text-ink-900">{dict.product.description}</h2>
                   <div className="mt-4 max-w-text space-y-4">
                     {toParagraphs(desc).map((p, i) => (
-                      <p key={i} className="text-sm leading-[1.78] text-ink-600">{p}</p>
+                      <p key={i} className="text-sm leading-[1.78] text-ink-600">
+                        {p}
+                      </p>
                     ))}
                   </div>
                 </div>
@@ -150,6 +189,41 @@ export default async function ServicePage({ params }) {
                 </ol>
               </div>
             </Reveal>
+
+            {/* Boshqa xizmatlar (ichki pere-linkovka) */}
+            {otherServices.length > 0 && (
+              <Reveal delay={0.12}>
+                <div className="mt-10">
+                  <div className="flex items-center justify-between gap-4 border-b border-ink-150 pb-2">
+                    <h2 className="text-lg font-semibold text-ink-900">{dict.services.allServices}</h2>
+                    <Link href={`/${locale}/services`} className="ul-link text-sm">
+                      {dict.services.title} →
+                    </Link>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {otherServices.map((s) => (
+                      <Link
+                        key={s.id}
+                        href={`/${locale}/services/${s.slug}`}
+                        prefetch={false}
+                        className="group flex flex-col justify-between border border-ink-150 bg-white p-4 transition-colors hover:border-ink-400 hover:bg-ink-25"
+                      >
+                        <div>
+                          <h3 className="text-sm font-semibold text-ink-900 transition-colors group-hover:text-blue-600">
+                            {pick(s, 'name', locale)}
+                          </h3>
+                          <p className="mt-1.5 text-xs leading-relaxed text-ink-500">{pick(s, 'short', locale)}</p>
+                        </div>
+                        <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-600">
+                          {dict.common.more}
+                          <Icon name="arrow" size={13} className="transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            )}
           </div>
 
           {/* O'ng ustun */}
@@ -186,17 +260,26 @@ export default async function ServicePage({ params }) {
       </section>
 
       {/* Shu yo'nalishdagi zapchastlar */}
-      {related.items.length > 0 && (
+      {relatedParts.length > 0 && (
         <section className="band band-pad">
           <div className="wrap">
             <div className="flex items-center justify-between gap-4 border-b border-ink-150 pb-2">
               <h2 className="text-lg font-semibold text-ink-900">{dict.services.relatedParts}</h2>
-              <Link href={`/${locale}/parts?category=${item.category.slug}`} className="ul-link text-sm">
+              <Link
+                href={
+                  item.category.slug !== 'umumiy-servis'
+                    ? `/${locale}/parts?category=${item.category.slug}`
+                    : `/${locale}/parts`
+                }
+                className="ul-link text-sm"
+              >
                 {dict.parts.title} →
               </Link>
             </div>
-            <div className="mt-6 grid gap-px bg-ink-150 xs:grid-cols-2 lg:grid-cols-4">
-              {related.items.map((p) => <PartCard key={p.id} item={p} locale={locale} dict={dict} />)}
+            <div className="mt-6 grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
+              {relatedParts.map((p) => (
+                <PartCard key={p.id} item={p} locale={locale} dict={dict} />
+              ))}
             </div>
           </div>
         </section>

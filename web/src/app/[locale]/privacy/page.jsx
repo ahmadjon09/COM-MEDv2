@@ -28,5 +28,5 @@ export default async function PrivacyPage({ params }) {
   const settings = await getSettings();
   const content = pick(settings, 'privacy', locale) || PRIVACY[locale] || PRIVACY.uz;
 
-  return <LegalPage locale={locale} dict={dict} title={dict.footer.privacy} content={content} />;
+  return <LegalPage locale={locale} dict={dict} title={dict.footer.privacy} content={content} path="/privacy" />;
 }

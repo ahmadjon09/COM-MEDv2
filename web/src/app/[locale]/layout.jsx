@@ -1,6 +1,6 @@
 // Til bo'yicha layout: header, footer, JSON-LD, hreflang.
 import { notFound } from 'next/navigation';
-import { getDict, isValidLocale, LOCALES } from '@/i18n';
+import { getDict, isValidLocale, LOCALES, pick } from '@/i18n';
 import { getSettings, getCategories } from '@/lib/api';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -23,13 +23,13 @@ export async function generateMetadata({ params }) {
   const dict = getDict(locale);
   const settings = await getSettings();
 
-  const { pick } = await import('@/i18n');
   return buildMetadata({
     locale,
     path: '',
     title: pick(settings, 'metaTitle', locale) || dict.seo.homeTitle,
     description: pick(settings, 'metaDesc', locale) || dict.seo.homeDesc,
     image: settings?.defaultOgImage,
+    useBanner: true,
   });
 }
 
@@ -42,6 +42,12 @@ export default async function LocaleLayout({ children, params }) {
   const [settings, categories] = await Promise.all([getSettings(), getCategories()]);
 
   const htmlLang = locale === 'ru' ? 'ru' : locale === 'uz-cyrl' ? 'uz-Cyrl' : 'uz';
+  const skipText =
+    locale === 'ru'
+      ? 'Перейти к основному содержимому'
+      : locale === 'uz-cyrl'
+        ? 'Асосий контентга ўтиш'
+        : "Asosiy kontentga o'tish";
 
   return (
     <html lang={htmlLang} className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
@@ -56,7 +62,7 @@ export default async function LocaleLayout({ children, params }) {
         )}
       </head>
       <body className="min-h-screen">
-        <JsonLd data={[organizationLd(settings, locale), localBusinessLd(settings, locale), websiteLd(locale)]} />
+        <JsonLd data={[organizationLd(settings, locale), localBusinessLd(settings, locale, dict), websiteLd(locale)]} />
 
         {/* Klaviatura foydalanuvchilari uchun */}
         <a
@@ -64,7 +70,7 @@ export default async function LocaleLayout({ children, params }) {
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[999]
                      focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white"
         >
-          Asosiy kontentga o'tish
+          {skipText}
         </a>
 
         <ToastProvider>

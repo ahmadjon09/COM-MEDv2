@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getDict, isValidLocale, pick } from '@/i18n';
 import { getSettings, getCategories, getProducts } from '@/lib/api';
-import { buildMetadata } from '@/lib/seo';
+import { buildMetadata, faqPageLd, abs } from '@/lib/seo';
 
 import Hero from '@/components/home/Hero';
 import Guarantees from '@/components/home/Guarantees';
@@ -29,7 +29,8 @@ export async function generateMetadata({ params }) {
   const settings = await getSettings();
 
   return buildMetadata({
-    locale, path: '',
+    locale,
+    path: '',
     title: pick(settings, 'metaTitle', locale) || dict.seo.homeTitle,
     description: pick(settings, 'metaDesc', locale) || dict.seo.homeDesc,
     image: settings?.defaultOgImage,
@@ -43,9 +44,9 @@ export async function generateMetadata({ params }) {
       'COM MEDICAL SERVIS Uzbekistan',
 
       // Asosiy xizmatlar — Uzbek
-      'tibbiy uskunalar ta’miri',
-      'tibbiy apparatlar ta’miri',
-      'tibbiy texnika ta’miri',
+      "tibbiy uskunalar ta'miri",
+      "tibbiy apparatlar ta'miri",
+      "tibbiy texnika ta'miri",
       'tibbiy uskunalarga texnik xizmat',
       'tibbiy apparatlarga servis xizmati',
       'tibbiy uskunalar servis xizmati',
@@ -53,60 +54,60 @@ export async function generateMetadata({ params }) {
       'tibbiy uskunalar profilaktikasi',
       'tibbiy uskunalar kalibrovkasi',
 
-      // Namangan lokal SEO
-      'tibbiy uskunalar ta’miri Namangan',
-      'tibbiy apparatlar ta’miri Namangan',
-      'tibbiy texnika ta’miri Namangan',
+      // Namangan va Farg'ona vodiysi lokal SEO
+      "tibbiy uskunalar ta'miri Namangan",
+      "tibbiy apparatlar ta'miri Namangan",
+      "tibbiy texnika ta'miri Namangan",
       'tibbiy uskunalar servisi Namangan',
       'tibbiy apparatlar servisi Namangan',
       'tibbiy uskunalar servis markazi Namangan',
       'tibbiy texnika servis markazi Namangan',
-      'meditsina uskunalari ta’miri Namangan',
+      "meditsina uskunalari ta'miri Namangan",
       'tibbiy uskunalar ehtiyot qismlari Namangan',
 
       // UZI
-      'UZI apparati ta’miri',
-      'UZI apparatlari ta’miri',
+      "UZI apparati ta'miri",
+      "UZI apparatlari ta'miri",
       'UZI apparati servisi',
-      'UZI apparatiga texnik xizmat',
+      'UZI datchik tiklash',
       'UZI apparati diagnostikasi',
       'UZI apparati ehtiyot qismlari',
       'UZI apparati zapchastlari',
-      'UZI apparati ta’miri Namangan',
+      "UZI apparati ta'miri Namangan",
 
       // EKG
-      'EKG apparati ta’miri',
+      "EKG apparati ta'miri",
       'EKG apparati servisi',
       'EKG apparati kalibrovkasi',
       'EKG kalibrovka',
       'EKG apparati diagnostikasi',
       'EKG apparati ehtiyot qismlari',
-      'EKG apparati ta’miri Namangan',
+      "EKG apparati ta'miri Namangan",
 
       // IVL
-      'IVL apparati ta’miri',
+      "IVL apparati ta'miri",
       'IVL apparati servisi',
       'IVL apparati ehtiyot qismlari',
       'IVL apparati zapchastlari',
-      'sun’iy nafas oldirish apparati ta’miri',
-      'IVL apparati ta’miri Namangan',
+      "sun'iy nafas oldirish apparati ta'miri",
+      "IVL apparati ta'miri Namangan",
 
       // Defibrillyator
-      'defibrillyator ta’miri',
-      'defibrillator ta’miri',
+      "defibrillyator ta'miri",
+      "defibrillator ta'miri",
       'defibrillyator servisi',
       'defibrillator akkumulyatori',
       'defibrillyator akkumulyatori',
       'defibrillyator ehtiyot qismlari',
-      'defibrillyator ta’miri Namangan',
+      "defibrillyator ta'miri Namangan",
 
       // Sterilizator
-      'sterilizator ta’miri',
-      'tibbiy sterilizator ta’miri',
-      'avtoklav ta’miri',
+      "sterilizator ta'miri",
+      "tibbiy sterilizator ta'miri",
+      "avtoklav ta'miri",
       'sterilizator servisi',
       'sterilizator ehtiyot qismlari',
-      'sterilizator ta’miri Namangan',
+      "sterilizator ta'miri Namangan",
 
       // Ehtiyot qismlar
       'tibbiy uskunalar ehtiyot qismlari',
@@ -124,6 +125,7 @@ export async function generateMetadata({ params }) {
       'ремонт медицинского оборудования Наманган',
       'сервис медицинского оборудования Наманган',
       'ремонт УЗИ аппарата',
+      'ремонт УЗИ датчиков',
       'ремонт УЗИ Наманган',
       'ремонт ЭКГ аппарата',
       'калибровка ЭКГ',
@@ -132,6 +134,7 @@ export async function generateMetadata({ params }) {
       'ремонт дефибриллятора',
       'аккумулятор для дефибриллятора',
       'ремонт стерилизатора',
+      'ремонт автоклава',
       'запчасти для медицинского оборудования',
       'медицинское оборудование запчасти',
 
@@ -148,7 +151,7 @@ export async function generateMetadata({ params }) {
       'дефибриллятор таъмири',
       'стерилизатор таъмири',
       'тиббий ускуналар таъмири Наманган',
-    ]
+    ],
   });
 }
 
@@ -165,19 +168,29 @@ export default async function HomePage({ params }) {
     getProducts({ kind: 'SERVICE', limit: 8 }),
   ]);
 
-  const faqLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: dict.faq.map((f) => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
-    })),
-  };
+  const homeLd = [
+    faqPageLd(dict.faq),
+    ...(services.items.length > 0
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: dict.services.title,
+            description: dict.services.subtitle,
+            itemListElement: services.items.map((s, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: pick(s, 'name', locale),
+              url: abs(`/${locale}/services/${s.slug}`),
+            })),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
-      <JsonLd data={faqLd} />
+      <JsonLd data={homeLd} />
 
       <Hero locale={locale} dict={dict} settings={settings} />
       <Guarantees dict={dict} />

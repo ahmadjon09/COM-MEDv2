@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import { getDict, isValidLocale, pick } from '@/i18n';
 import { getSettings } from '@/lib/api';
-import { buildMetadata, breadcrumbLd, abs } from '@/lib/seo';
+import { buildMetadata, breadcrumbLd, abs, SITE_URL } from '@/lib/seo';
 import { formatPhone } from '@/lib/utils';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import JsonLd from '@/components/ui/JsonLd';
@@ -16,12 +16,24 @@ export async function generateMetadata({ params }) {
   if (!isValidLocale(locale)) return {};
   const dict = getDict(locale);
   const settings = await getSettings();
+  const siteName = pick(settings, 'siteName', locale) || 'COM MEDICAL SERVIS';
+  const address = pick(settings, 'address', locale) || '';
+
   return buildMetadata({
-    locale, path: '/contact',
-    title: `${dict.contact.title} — ${pick(settings, 'siteName', locale) || 'COM MEDICAL SERVIS'}`,
-    description: `${dict.contact.subtitle} ${pick(settings, 'address', locale) || ''}`.trim(),
+    locale,
+    path: '/contact',
+    title: `${dict.contact.title} — ${siteName}`,
+    description: `${dict.contact.subtitle} ${address}`.trim(),
     ogParams: { title: dict.contact.title, subtitle: dict.contact.subtitle, badge: 'CONTACT' },
     useBanner: true,
+    keywords: [
+      `${siteName} aloqa`,
+      `${siteName} telefon`,
+      `${siteName} manzil`,
+      'COM MEDICAL SERVIS Namangan',
+      'тиббий ускуналар сервиси Наманган манзил',
+      'ремонт медоборудования Наманган контакты',
+    ],
   });
 }
 
@@ -39,19 +51,36 @@ export default async function ContactPage({ params }) {
     pick(settings, 'address', locale) && { k: dict.contact.address, v: pick(settings, 'address', locale) },
   ].filter(Boolean);
 
+  const pageUrl = abs(`/${locale}/contact`);
+
   return (
     <>
-      <JsonLd data={breadcrumbLd([
-        { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
-        { name: dict.contact.title, url: abs(`/${locale}/contact`) },
-      ])} />
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
+            { name: dict.contact.title, url: pageUrl },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ContactPage',
+            '@id': `${pageUrl}#contactpage`,
+            name: dict.contact.title,
+            description: dict.contact.subtitle,
+            url: pageUrl,
+            mainEntity: { '@id': `${SITE_URL}/#localbusiness` },
+          },
+        ]}
+      />
 
       <section className="border-b border-ink-150">
         <div className="wrap py-9 lg:py-12">
           <Breadcrumbs items={[{ name: dict.product.breadcrumbHome, href: `/${locale}` }, { name: dict.contact.title }]} />
           <Reveal>
             <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:gap-16">
-              <h1 className="text-3xl font-semibold tracking-tight text-ink-900 md:text-4xl xl:text-5xl">{dict.contact.title}</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-ink-900 md:text-4xl xl:text-5xl">
+                {dict.contact.title}
+              </h1>
               <p className="max-w-text self-end text-sm leading-relaxed text-ink-500">{dict.contact.subtitle}</p>
             </div>
           </Reveal>
@@ -67,7 +96,13 @@ export default async function ContactPage({ params }) {
                   <div key={i} className="grid gap-1 border-b border-ink-150 py-4 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-6">
                     <dt className="kicker sm:pt-1">{r.k}</dt>
                     <dd className={`text-base text-ink-900 ${r.mono ? 'font-mono tnum' : ''}`}>
-                      {r.href ? <a href={r.href} className="ul-link">{r.v}</a> : r.v}
+                      {r.href ? (
+                        <a href={r.href} className="ul-link">
+                          {r.v}
+                        </a>
+                      ) : (
+                        r.v
+                      )}
                     </dd>
                   </div>
                 ))}
@@ -77,8 +112,13 @@ export default async function ContactPage({ params }) {
             {settings?.mapEmbedUrl && (
               <Reveal delay={0.08}>
                 <div className="mt-8 border border-ink-150">
-                  <iframe src={settings.mapEmbedUrl} title="map" loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade" className="h-[360px] w-full border-0" />
+                  <iframe
+                    src={settings.mapEmbedUrl}
+                    title={dict.contact.address}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="h-[360px] w-full border-0"
+                  />
                 </div>
               </Reveal>
             )}

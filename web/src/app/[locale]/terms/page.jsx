@@ -28,5 +28,5 @@ export default async function TermsPage({ params }) {
   const settings = await getSettings();
   const content = pick(settings, 'terms', locale) || TERMS[locale] || TERMS.uz;
 
-  return <LegalPage locale={locale} dict={dict} title={dict.footer.terms} content={content} />;
+  return <LegalPage locale={locale} dict={dict} title={dict.footer.terms} content={content} path="/terms" />;
 }

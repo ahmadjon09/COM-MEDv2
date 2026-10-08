@@ -1,7 +1,7 @@
 'use client';
 // Admin panel uchun API klienti: JWT saqlash, avtomatik refresh, xatolarni ushlash.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 const ACCESS_KEY = 'ms-admin-access';
 const REFRESH_KEY = 'ms-admin-refresh';
