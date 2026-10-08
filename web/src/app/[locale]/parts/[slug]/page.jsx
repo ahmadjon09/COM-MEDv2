@@ -10,7 +10,6 @@ import { formatPrice, toParagraphs, truncate } from '@/lib/utils';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import JsonLd from '@/components/ui/JsonLd';
 import Reveal from '@/components/ui/Reveal';
-import Icon from '@/components/ui/Icons';
 import RequestForm from '@/components/forms/RequestForm';
 import Gallery from '@/components/catalog/Gallery';
 import PartCard from '@/components/catalog/PartCard';
@@ -22,7 +21,7 @@ export async function generateStaticParams() {
   const { products } = await getAllSlugs();
   return products
     .filter((p) => p.kind !== 'SERVICE')
-    .slice(0, 60)
+    .slice(0, 500)
     .flatMap((p) => ['uz', 'ru', 'uz-cyrl'].map((locale) => ({ locale, slug: p.slug })));
 }
 
@@ -34,18 +33,40 @@ export async function generateMetadata({ params }) {
 
   const dict = getDict(locale);
   const name = pick(item, 'name', locale);
+  const catName = item.category ? pick(item.category, 'name', locale) : '';
   const country = item.originCountry ? dict.countries[item.originCountry] || item.originCountry : '';
   const short = pick(item, 'short', locale);
+  const priceText = item.price ? formatPrice(item.price, item.currency, locale, dict) : '';
 
   return buildMetadata({
-    locale, path: `/parts/${slug}`, type: 'article',
-    title: pick(item, 'metaTitle', locale) || `${name}${item.sku ? ` — ${item.sku}` : ''}`,
+    locale,
+    path: `/parts/${slug}`,
+    type: 'website',
+    title: pick(item, 'metaTitle', locale) || `${name}${item.sku ? ` (${item.sku})` : ''} — ${dict.parts.title}`,
     description:
       pick(item, 'metaDesc', locale) ||
-      truncate(`${short} ${item.brand ? `Brend: ${item.brand}.` : ''} ${country ? `${dict.parts.country}: ${country}.` : ''}`, 300),
+      truncate(
+        `${short} ${item.brand ? `${dict.parts.brand}: ${item.brand}.` : ''} ${country ? `${dict.parts.country}: ${country}.` : ''} ${priceText ? `${dict.parts.price}: ${priceText}.` : ''}`,
+        165
+      ),
     image: item.ogImage || item.images?.[0],
-    ogParams: { title: name, subtitle: [item.brand, item.model, country].filter(Boolean).join(' · '), badge: item.sku || 'PART' },
-    keywords: [name, item.brand, item.model, item.sku, country, ...(item.keywords || [])].filter(Boolean),
+    ogParams: {
+      title: name,
+      subtitle: [item.brand, item.model, country].filter(Boolean).join(' · '),
+      badge: item.sku || 'PART',
+      price: priceText || undefined,
+    },
+    keywords: [
+      name,
+      item.brand,
+      item.model,
+      item.sku,
+      catName,
+      country,
+      ...(item.compatibility || []),
+      ...(item.keywords || []),
+      'COM MEDICAL SERVIS',
+    ].filter(Boolean),
   });
 }
 
@@ -80,23 +101,28 @@ export default async function PartPage({ params }) {
 
   return (
     <>
-      <JsonLd data={[
-        breadcrumbLd([
-          { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
-          { name: dict.parts.title, url: abs(`/${locale}/parts`) },
-          { name, url },
-        ]),
-        productLd(item, locale, url),
-      ]} />
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
+            { name: dict.parts.title, url: abs(`/${locale}/parts`) },
+            { name: catName, url: abs(`/${locale}/parts?category=${item.category.slug}`) },
+            { name, url },
+          ]),
+          productLd(item, locale, url, dict),
+        ]}
+      />
 
       <div className="border-b border-ink-150">
         <div className="wrap py-5">
-          <Breadcrumbs items={[
-            { name: dict.product.breadcrumbHome, href: `/${locale}` },
-            { name: dict.parts.title, href: `/${locale}/parts` },
-            { name: catName, href: `/${locale}/parts?category=${item.category.slug}` },
-            { name },
-          ]} />
+          <Breadcrumbs
+            items={[
+              { name: dict.product.breadcrumbHome, href: `/${locale}` },
+              { name: dict.parts.title, href: `/${locale}/parts` },
+              { name: catName, href: `/${locale}/parts?category=${item.category.slug}` },
+              { name },
+            ]}
+          />
         </div>
       </div>
 
@@ -109,9 +135,13 @@ export default async function PartPage({ params }) {
                 <span className="bg-ink-900 px-2 py-1 font-mono text-label uppercase text-white">
                   {item.sku || 'PART'}
                 </span>
-                <span className="border border-ink-150 px-2 py-1 font-mono text-label uppercase text-ink-500">
+                <Link
+                  href={`/${locale}/parts?category=${item.category.slug}`}
+                  prefetch={false}
+                  className="border border-ink-150 px-2 py-1 font-mono text-label uppercase text-ink-500 transition-colors hover:border-blue-500 hover:text-blue-600"
+                >
                   {catName}
-                </span>
+                </Link>
                 <span className="flex items-center gap-1.5 text-xs text-ink-600">
                   <span className="dot bg-ok" />
                   {dict.parts.supply}
@@ -170,7 +200,9 @@ export default async function PartPage({ params }) {
                   <h2 className="border-b border-ink-150 pb-2 text-lg font-semibold text-ink-900">{dict.product.description}</h2>
                   <div className="mt-4 max-w-text space-y-4">
                     {toParagraphs(desc).map((p, i) => (
-                      <p key={i} className="text-sm leading-[1.78] text-ink-600">{p}</p>
+                      <p key={i} className="text-sm leading-[1.78] text-ink-600">
+                        {p}
+                      </p>
                     ))}
                   </div>
                 </div>
@@ -231,7 +263,9 @@ export default async function PartPage({ params }) {
               </Link>
             </div>
             <div className="mt-6 grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
-              {item.related.map((p) => <PartCard key={p.id} item={p} locale={locale} dict={dict} />)}
+              {item.related.map((p) => (
+                <PartCard key={p.id} item={p} locale={locale} dict={dict} />
+              ))}
             </div>
           </div>
         </section>

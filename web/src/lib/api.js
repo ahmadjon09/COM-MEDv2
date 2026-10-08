@@ -3,7 +3,7 @@
 import 'server-only';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://commedical.uz').replace(/\/$/, '');
 
 /**
  * Ichki fetch: timeout, ISR revalidate va xatolarni yumshoq ushlash bilan.

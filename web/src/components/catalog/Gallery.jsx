@@ -46,7 +46,7 @@ export default function Gallery({ images = [], alt, kind }) {
                 i === active ? 'opacity-100 ring-1 ring-inset ring-blue-500' : 'opacity-55 hover:opacity-100'
               }`}
             >
-              <Image src={img} alt="" fill sizes="80px" className="object-contain p-1.5" />
+              <Image src={img} alt={`${alt} — ${i + 1}`} fill sizes="80px" className="object-contain p-1.5" />
             </button>
           ))}
         </div>

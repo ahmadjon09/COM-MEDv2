@@ -20,14 +20,18 @@ export default function PartRow({ item, locale, dict }) {
     >
       <div className="relative h-14 w-16 shrink-0 overflow-hidden border border-ink-150 imgplate">
         {item.images?.[0] ? (
-          <Image src={item.images[0]} alt="" fill sizes="64px" className="object-contain p-1" />
+          <Image src={item.images[0]} alt={name} fill sizes="64px" className="object-contain p-1" />
         ) : (
-          <span className="grid h-full place-items-center text-ink-200"><Icon name="box" size={18} /></span>
+          <span className="grid h-full place-items-center text-ink-200">
+            <Icon name="box" size={18} />
+          </span>
         )}
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-ink-900 transition-colors group-hover:text-blue-600">{name}</p>
+        <h3 className="truncate text-sm font-medium text-ink-900 transition-colors group-hover:text-blue-600">
+          {name}
+        </h3>
         <p className="mt-0.5 font-mono text-label uppercase text-ink-400">{item.sku || '—'}</p>
       </div>
 
@@ -53,8 +57,10 @@ export default function PartRow({ item, locale, dict }) {
         {item.priceNote && <p className="text-xs text-ink-400">{item.priceNote}</p>}
       </div>
 
-      <span className="grid h-8 w-8 place-items-center border border-ink-200 text-ink-400
-                       transition-colors duration-200 group-hover:border-blue-500 group-hover:bg-blue-500 group-hover:text-white">
+      <span
+        className="grid h-8 w-8 place-items-center border border-ink-200 text-ink-400
+                       transition-colors duration-200 group-hover:border-blue-500 group-hover:bg-blue-500 group-hover:text-white"
+      >
         <Icon name="arrow" size={14} />
       </span>
     </Link>

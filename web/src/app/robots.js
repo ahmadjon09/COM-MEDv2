@@ -1,19 +1,32 @@
 // robots.txt avtomatik generatsiyasi.
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+import { SITE_URL } from '@/lib/seo';
 
 export default function robots() {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/admin', '/admin/', '/api/'],
+        allow: ['/', '/api/og'],
+        disallow: ['/admin', '/admin/', '/api/', '/*?q=*'],
       },
       // Yandex O'zbekistonda muhim — alohida ruxsat
-      { userAgent: 'Yandex', allow: '/', disallow: ['/admin', '/api/'], crawlDelay: 1 },
-      { userAgent: 'Googlebot', allow: '/', disallow: ['/admin', '/api/'] },
+      {
+        userAgent: 'Yandex',
+        allow: ['/', '/api/og'],
+        disallow: ['/admin', '/admin/', '/api/', '/*?q=*'],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: ['/', '/api/og'],
+        disallow: ['/admin', '/admin/', '/api/', '/*?q=*'],
+      },
+      {
+        userAgent: 'Googlebot-Image',
+        allow: ['/', '/equipment/', '/api/og'],
+        disallow: ['/admin', '/admin/'],
+      },
     ],
-    sitemap: `${SITE}/sitemap.xml`,
-    host: SITE,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

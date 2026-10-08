@@ -53,7 +53,7 @@ export default function Header({ locale, dict, settings }) {
           <Link href={`/${locale}`} className="group flex shrink-0 items-center gap-2.5" prefetch>
             <Image
               src="/logo.png"
-              alt=""
+              alt={siteName}
               width={34}
               height={34}
               priority
@@ -63,7 +63,7 @@ export default function Header({ locale, dict, settings }) {
           </Link>
 
           {/* Navigatsiya */}
-          <nav className="ml-4 hidden items-center lg:flex">
+          <nav aria-label={dict.nav.menu} className="ml-4 hidden items-center lg:flex">
             {nav.map((item) => (
               <Link
                 key={item.href}

@@ -107,7 +107,7 @@ const listSelect = {
   includesUz: true, includesRu: true, includesUzCyrl: true,
   leadTimeUz: true, leadTimeRu: true, leadTimeUzCyrl: true,
   isFeatured: true, createdAt: true,
-  category: { select: { slug: true, nameUz: true, nameRu: true, nameUzCyrl: true, iconKey: true } },
+  category: { select: { slug: true, nameUz: true, nameRu: true, nameUzCyrl: true, iconKey: true, imageUrl: true } },
 };
 
 function orderBy(sort) {
@@ -234,7 +234,7 @@ productsRouter.get(
   ah(async (_req, res) => {
     const [products, categories] = await Promise.all([
       prisma.product.findMany({ where: { isActive: true }, select: { slug: true, kind: true, updatedAt: true } }),
-      prisma.category.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
+      prisma.category.findMany({ where: { isActive: true }, select: { slug: true, scope: true, updatedAt: true } }),
     ]);
     res.json({ ok: true, data: { products, categories } });
   })

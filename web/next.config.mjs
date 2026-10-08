@@ -68,6 +68,11 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
+        // Uskuna rasmlari va logotip — uzoq muddatli brauzer/CDN keshi
+        source: '/equipment/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' }],
+      },
+      {
         // Admin panel hech qachon indekslanmasin
         source: '/admin/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
@@ -95,7 +100,7 @@ const nextConfig = {
 
   async redirects() {
     return [
-      { source: '/', destination: '/uz', permanent: false },
+      { source: '/', destination: '/uz', permanent: true },
       // Eski struktura (bitta umumiy katalog) — yangi bo'limlarga yo'naltiramiz
       { source: '/:locale(uz|ru|uz-cyrl)/catalog', destination: '/:locale/parts', permanent: true },
       { source: '/:locale(uz|ru|uz-cyrl)/catalog/:cat', destination: '/:locale/parts?category=:cat', permanent: true },

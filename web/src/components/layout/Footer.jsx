@@ -32,7 +32,7 @@ export default function Footer({ locale, dict, settings, categories = [] }) {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.25fr] lg:gap-12">
           <div>
             <Link href={`/${locale}`} className="inline-flex items-center gap-2.5">
-              <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 object-contain" />
+              <Image src="/logo.png" alt={siteName} width={32} height={32} className="h-8 w-8 object-contain" />
               <span className="text-[0.9375rem] font-semibold text-ink-900">{siteName}</span>
             </Link>
 
@@ -44,7 +44,7 @@ export default function Footer({ locale, dict, settings, categories = [] }) {
               <div className="mt-5 flex gap-px bg-ink-150">
                 {allSocials.map((s) => (
                   <a
-                    key={s.url} href={s.url} target="_blank" rel="noopener noreferrer nofollow" aria-label={s.type}
+                    key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" aria-label={s.type}
                     className="grid h-9 w-9 place-items-center bg-ink-25 text-ink-500 transition-colors
                                hover:bg-blue-500 hover:text-white"
                   >

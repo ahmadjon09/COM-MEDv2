@@ -2,6 +2,7 @@
 // Zapchastlar katalogi — chap tomonda filtr paneli, o'ngda jadval yoki kartalar.
 // Ma'lumot SWR orqali; server yiqilsa IndexedDB keshidan ko'rsatiladi.
 import { useMemo, useState, useEffect, useDeferredValue } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import PartCard from './PartCard';
 import PartRow from './PartRow';
@@ -14,10 +15,15 @@ import { pick } from '@/i18n';
 const PAGE = 24;
 
 export default function PartsCatalog({
-  locale, dict, categories = [], filters = { brands: [], countries: [] },
-  initialData, fixedCategory = null,
+  locale,
+  dict,
+  categories = [],
+  filters = { brands: [], countries: [] },
+  initialData,
+  fixedCategory = null,
+  initialQuery = '',
 }) {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(initialQuery || '');
   const [category, setCategory] = useState(fixedCategory || '');
   const [brand, setBrand] = useState('');
   const [country, setCountry] = useState('');
@@ -27,8 +33,20 @@ export default function PartsCatalog({
   const [view, setView] = useState('table');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // URL parametr o'zgarsa (masalan, foydalanuvchi kategoriya havolasini bossa)
+  useEffect(() => {
+    setCategory(fixedCategory || '');
+  }, [fixedCategory]);
+
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setQ(initialQuery);
+      setDq(initialQuery.trim());
+    }
+  }, [initialQuery]);
+
   const deferredQ = useDeferredValue(q);
-  const [dq, setDq] = useState('');
+  const [dq, setDq] = useState((initialQuery || '').trim());
   useEffect(() => {
     const t = setTimeout(() => setDq(deferredQ.trim()), 320);
     return () => clearTimeout(t);
@@ -55,7 +73,13 @@ export default function PartsCatalog({
   }, [dq, category, brand, country, partType, sort, limit]);
 
   const pristine =
-    !dq && category === (fixedCategory || '') && !brand && !country && !partType && sort === 'manual' && limit === PAGE;
+    dq === (initialQuery || '').trim() &&
+    category === (fixedCategory || '') &&
+    !brand &&
+    !country &&
+    !partType &&
+    sort === 'manual' &&
+    limit === PAGE;
 
   const { data, meta, isLoading, isStale, error } = useApi(path, {
     fallbackData: pristine && initialData ? initialData : undefined,
@@ -64,31 +88,48 @@ export default function PartsCatalog({
   const items = data ?? [];
   const total = meta?.total ?? items.length;
   const hasMore = items.length < total;
-  const dirty = q || (!fixedCategory && category) || brand || country || partType || sort !== 'manual';
+  const dirty = q || category || brand || country || partType || sort !== 'manual';
 
   const reset = () => {
-    setQ(''); setCategory(fixedCategory || ''); setBrand(''); setCountry(''); setPartType('');
-    setSort('manual'); setLimit(PAGE);
+    setQ('');
+    setCategory('');
+    setBrand('');
+    setCountry('');
+    setPartType('');
+    setSort('manual');
+    setLimit(PAGE);
   };
+
+  const partCategories = categories.filter((c) => c.scope !== 'SERVICE');
 
   const FilterPanel = (
     <div className="divide-y divide-ink-150 border border-ink-150 bg-white">
-      {!fixedCategory && (
-        <FilterBlock label={dict.nav.catalog}>
-          <FilterOption active={!category} onClick={() => { setCategory(''); setLimit(PAGE); }}>
-            {dict.catalog.all}
+      <FilterBlock label={dict.nav.catalog}>
+        <FilterOption
+          href={`/${locale}/parts`}
+          active={!category}
+          onClick={() => {
+            setCategory('');
+            setLimit(PAGE);
+          }}
+        >
+          {dict.catalog.all}
+        </FilterOption>
+        {partCategories.map((c) => (
+          <FilterOption
+            key={c.id}
+            href={`/${locale}/parts?category=${c.slug}`}
+            active={category === c.slug}
+            onClick={() => {
+              setCategory(c.slug);
+              setLimit(PAGE);
+            }}
+            count={c.productCount}
+          >
+            {pick(c, 'name', locale)}
           </FilterOption>
-          {categories.map((c) => (
-            <FilterOption
-              key={c.id} active={category === c.slug}
-              onClick={() => { setCategory(c.slug); setLimit(PAGE); }}
-              count={c.productCount}
-            >
-              {pick(c, 'name', locale)}
-            </FilterOption>
-          ))}
-        </FilterBlock>
-      )}
+        ))}
+      </FilterBlock>
 
       {filters.types?.length > 0 && (
         <FilterBlock label={dict.partTypes.label}>
@@ -97,8 +138,13 @@ export default function PartsCatalog({
           </FilterOption>
           {filters.types.map((t) => (
             <FilterOption
-              key={t.value} active={partType === t.value}
-              onClick={() => { setPartType(t.value); setLimit(PAGE); }} count={t.count}
+              key={t.value}
+              active={partType === t.value}
+              onClick={() => {
+                setPartType(t.value);
+                setLimit(PAGE);
+              }}
+              count={t.count}
             >
               {dict.partTypes[t.value] || t.value}
             </FilterOption>
@@ -112,8 +158,15 @@ export default function PartsCatalog({
             {dict.parts.allBrands}
           </FilterOption>
           {filters.brands.map((b) => (
-            <FilterOption key={b.value} active={brand === b.value}
-                          onClick={() => { setBrand(b.value); setLimit(PAGE); }} count={b.count}>
+            <FilterOption
+              key={b.value}
+              active={brand === b.value}
+              onClick={() => {
+                setBrand(b.value);
+                setLimit(PAGE);
+              }}
+              count={b.count}
+            >
               {b.value}
             </FilterOption>
           ))}
@@ -126,8 +179,15 @@ export default function PartsCatalog({
             {dict.parts.allCountries}
           </FilterOption>
           {filters.countries.map((c) => (
-            <FilterOption key={c.value} active={country === c.value}
-                          onClick={() => { setCountry(c.value); setLimit(PAGE); }} count={c.count}>
+            <FilterOption
+              key={c.value}
+              active={country === c.value}
+              onClick={() => {
+                setCountry(c.value);
+                setLimit(PAGE);
+              }}
+              count={c.count}
+            >
               <span className="font-mono text-label uppercase text-ink-400">{c.value}</span>{' '}
               {dict.countries[c.value] || c.value}
             </FilterOption>
@@ -173,23 +233,32 @@ export default function PartsCatalog({
           <div className="relative flex-1">
             <Icon name="search" size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
             <input
+              type="search"
               value={q}
-              onChange={(e) => { setQ(e.target.value); setLimit(PAGE); }}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setLimit(PAGE);
+              }}
               placeholder={dict.parts.search}
               aria-label={dict.parts.search}
               className="h-11 w-full rounded border border-ink-200 bg-white pl-10 pr-10 text-sm outline-none
                          transition-colors duration-200 placeholder:text-ink-400 focus:border-blue-500 focus:shadow-focus"
             />
             {q && (
-              <button onClick={() => setQ('')} aria-label={dict.catalog.reset}
-                      className="absolute right-2.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center text-ink-400 hover:text-ink-900">
+              <button
+                onClick={() => setQ('')}
+                aria-label={dict.catalog.reset}
+                className="absolute right-2.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center text-ink-400 hover:text-ink-900"
+              >
                 <Icon name="close" size={14} />
               </button>
             )}
           </div>
 
           <select
-            value={sort} onChange={(e) => setSort(e.target.value)} aria-label={dict.catalog.sort}
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label={dict.catalog.sort}
             className="h-11 rounded border border-ink-200 bg-white px-3 text-sm text-ink-700 outline-none focus:border-blue-500"
           >
             <option value="manual">{dict.catalog.sort}</option>
@@ -204,7 +273,10 @@ export default function PartsCatalog({
               { k: 'grid', icon: 'box', label: dict.parts.viewGrid },
             ].map((v, i) => (
               <button
-                key={v.k} onClick={() => setView(v.k)} title={v.label} aria-label={v.label}
+                key={v.k}
+                onClick={() => setView(v.k)}
+                title={v.label}
+                aria-label={v.label}
                 className={`grid h-11 w-11 place-items-center transition-colors duration-200 ${i > 0 ? 'border-l border-ink-150' : ''} ${
                   view === v.k ? 'bg-ink-900 text-white' : 'text-ink-500 hover:bg-ink-50'
                 }`}
@@ -221,7 +293,8 @@ export default function PartsCatalog({
           </span>
           {isStale && (
             <span className="kicker flex items-center gap-1.5 text-warn">
-              <span className="dot bg-warn" />{dict.common.offlineNotice}
+              <span className="dot bg-warn" />
+              {dict.common.offlineNotice}
             </span>
           )}
         </div>
@@ -233,8 +306,10 @@ export default function PartsCatalog({
         ) : view === 'table' ? (
           <div className="border-t border-ink-150">
             {/* Jadval sarlavhasi */}
-            <div className="hidden grid-cols-[64px_minmax(0,2.4fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,1fr)_36px]
-                            gap-4 border-b border-ink-150 bg-ink-25 px-4 py-2.5 lg:grid">
+            <div
+              className="hidden grid-cols-[64px_minmax(0,2.4fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,1fr)_36px]
+                            gap-4 border-b border-ink-150 bg-ink-25 px-4 py-2.5 lg:grid"
+            >
               <span className="kicker">{dict.parts.colPhoto}</span>
               <span className="kicker">{dict.parts.colName}</span>
               <span className="kicker">{dict.parts.colBrand}</span>
@@ -243,15 +318,20 @@ export default function PartsCatalog({
               <span className="kicker text-right">{dict.parts.colPrice}</span>
               <span />
             </div>
-            {items.map((it) => <PartRow key={it.id} item={it} locale={locale} dict={dict} />)}
+            {items.map((it) => (
+              <PartRow key={it.id} item={it} locale={locale} dict={dict} />
+            ))}
           </div>
         ) : (
           <motion.div layout className="grid gap-5 xs:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             <AnimatePresence mode="popLayout">
               {items.map((it, i) => (
                 <motion.div
-                  key={it.id} layout
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  key={it.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.25, delay: Math.min(i, 8) * 0.02 }}
                   className="h-full"
                 >
@@ -264,8 +344,13 @@ export default function PartsCatalog({
 
         {hasMore && (
           <div className="mt-8 flex justify-center">
-            <Button variant="outline" size="md" loading={isLoading} onClick={() => setLimit((l) => l + PAGE)}
-                    iconRight={<Icon name="chevronDown" size={15} />}>
+            <Button
+              variant="outline"
+              size="md"
+              loading={isLoading}
+              onClick={() => setLimit((l) => l + PAGE)}
+              iconRight={<Icon name="chevronDown" size={15} />}
+            >
               {dict.catalog.loadMore}
             </Button>
           </div>
@@ -284,14 +369,22 @@ function FilterBlock({ label, children }) {
   );
 }
 
-function FilterOption({ active, onClick, count, children }) {
+function FilterOption({ active, onClick, count, href, children }) {
+  const cls = `flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm transition-colors duration-150 ${
+    active ? 'bg-blue-50 font-medium text-blue-700' : 'text-ink-600 hover:bg-ink-25 hover:text-ink-900'
+  }`;
+
+  if (href) {
+    return (
+      <Link href={href} prefetch={false} onClick={onClick} className={cls} aria-current={active ? 'page' : undefined}>
+        <span className="truncate">{children}</span>
+        {count != null && <span className="kicker shrink-0 tnum">{count}</span>}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm transition-colors duration-150 ${
-        active ? 'bg-blue-50 font-medium text-blue-700' : 'text-ink-600 hover:bg-ink-25 hover:text-ink-900'
-      }`}
-    >
+    <button onClick={onClick} className={cls}>
       <span className="truncate">{children}</span>
       {count != null && <span className="kicker shrink-0 tnum">{count}</span>}
     </button>

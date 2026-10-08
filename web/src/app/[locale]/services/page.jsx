@@ -20,11 +20,24 @@ export async function generateMetadata({ params }) {
   const settings = await getSettings();
 
   return buildMetadata({
-    locale, path: '/services',
+    locale,
+    path: '/services',
     title: `${dict.services.title} — ${pick(settings, 'siteName', locale) || 'COM MEDICAL SERVIS'}`,
     description: dict.services.subtitle,
     ogParams: { title: dict.services.title, subtitle: dict.services.subtitle, badge: 'SERVICE' },
-    keywords: ['UZI remont', 'ремонт УЗИ', 'EKG kalibrovka', 'ИВЛ сервис', 'avtoklav xizmat', 'тиббий ускуна таъмири'],
+    keywords: [
+      "tibbiy uskunalar ta'miri",
+      'tibbiy apparatlar diagnostikasi',
+      'tibbiy uskunalar kalibrovkasi',
+      'UZI remont',
+      'ремонт УЗИ',
+      'EKG kalibrovka',
+      'калибровка ЭКГ',
+      'ИВЛ сервис',
+      'avtoklav xizmat',
+      'ремонт медицинского оборудования Наманган',
+      'тиббий ускуна таъмири',
+    ],
   });
 }
 
@@ -38,24 +51,38 @@ export default async function ServicesPage({ params }) {
     getProducts({ kind: 'SERVICE', limit: 40 }),
   ]);
 
+  const pageUrl = abs(`/${locale}/services`);
+
   return (
     <>
-      <JsonLd data={[
-        breadcrumbLd([
-          { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
-          { name: dict.services.title, url: abs(`/${locale}/services`) },
-        ]),
-        {
-          '@context': 'https://schema.org',
-          '@type': 'ItemList',
-          name: dict.services.title,
-          itemListElement: services.items.map((s, i) => ({
-            '@type': 'ListItem', position: i + 1,
-            name: pick(s, 'name', locale),
-            url: abs(`/${locale}/services/${s.slug}`),
-          })),
-        },
-      ]} />
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: dict.product.breadcrumbHome, url: abs(`/${locale}`) },
+            { name: dict.services.title, url: pageUrl },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            '@id': `${pageUrl}#collection`,
+            name: dict.services.title,
+            description: dict.services.subtitle,
+            url: pageUrl,
+            mainEntity: {
+              '@type': 'ItemList',
+              name: dict.services.title,
+              numberOfItems: services.items.length,
+              itemListElement: services.items.map((s, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                name: pick(s, 'name', locale),
+                description: pick(s, 'short', locale),
+                url: abs(`/${locale}/services/${s.slug}`),
+              })),
+            },
+          },
+        ]}
+      />
 
       <section className="border-b border-ink-150">
         <div className="wrap py-9 lg:py-12">
@@ -120,7 +147,7 @@ export default async function ServicesPage({ params }) {
                     {/* Nimalar kiradi */}
                     {Array.isArray(includes) && includes.length > 0 && (
                       <div className="border-t border-ink-150 pt-6 lg:border-l lg:border-t-0 lg:pl-14 lg:pt-0">
-                        <p className="text-sm font-semibold text-ink-900">{dict.services.includes}</p>
+                        <h3 className="text-sm font-semibold text-ink-900">{dict.services.includes}</h3>
                         <ul className="mt-4 space-y-0">
                           {includes.map((it, k) => (
                             <li key={k} className="flex gap-3 border-b border-dashed border-ink-150 py-2.5 last:border-0">
